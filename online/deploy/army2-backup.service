@@ -1,0 +1,6 @@
+[Unit]
+Description=Back up ARMY2 SQLite database
+
+[Service]
+Type=oneshot
+ExecStart=/opt/army2-online/backup.sh

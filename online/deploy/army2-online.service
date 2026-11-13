@@ -1,0 +1,29 @@
+[Unit]
+Description=ARMY2 online test server
+After=network.target
+
+[Service]
+Type=simple
+User=army2-online
+Group=army2-online
+WorkingDirectory=/opt/army2-online
+Environment=ARMY_HOST=127.0.0.1
+Environment=ARMY_PORT=8080
+Environment=ARMY_DB=/var/lib/army2-online/army2.sqlite3
+Environment=ARMY_REQUIRE_TLS=1
+ExecStart=/usr/bin/python3 -m server.main
+Restart=on-failure
+RestartSec=3
+StateDirectory=army2-online
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+MemoryMax=256M
+TasksMax=128
+LimitNOFILE=1024
+
+[Install]
+WantedBy=multi-user.target

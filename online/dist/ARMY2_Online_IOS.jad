@@ -1,0 +1,12 @@
+Manifest-Version: 1.0
+MIDlet-1: ARMY2 Online Test, /icon.png, army2.online.OnlineMidlet
+MIDlet-Name: ARMY2_Online_Test
+MIDlet-Vendor: army2-online
+MIDlet-Version: 0.1.0
+MicroEdition-Configuration: CLDC-1.1
+MicroEdition-Profile: MIDP-2.0
+MIDlet-Permissions-Opt: javax.microedition.io.Connector.http,javax.mic
+ roedition.io.Connector.https
+Army2-Server: http://127.0.0.1:8080
+MIDlet-Jar-URL: ARMY2_Online_IOS.jar
+MIDlet-Jar-Size: 29428629
