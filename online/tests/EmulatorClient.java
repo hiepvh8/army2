@@ -39,9 +39,10 @@ public class EmulatorClient {
     }
     static void screenshot(String path) throws Exception {
         Thread.sleep(300);
-        java.awt.image.BufferedImage image=new java.awt.image.BufferedImage(480,800,java.awt.image.BufferedImage.TYPE_INT_RGB);
+        int width=Integer.getInteger("army.test.width",480),height=Integer.getInteger("army.test.height",800);
+        java.awt.image.BufferedImage image=new java.awt.image.BufferedImage(width,height,java.awt.image.BufferedImage.TYPE_INT_RGB);
         J2SEDeviceDisplay dd=(J2SEDeviceDisplay)DeviceFactory.getDevice().getDeviceDisplay();
-        dd.paintDisplayable(image.getGraphics(),0,0,480,800);
+        dd.paintDisplayable(image.getGraphics(),0,0,width,height);
         ImageIO.write(image,"png",new File(path));
     }
     public static void main(String[] args) {
@@ -61,8 +62,9 @@ public class EmulatorClient {
         DeviceEntry device=new DeviceEntry("Default device",null,"org/microemu/device/default/device.xml",true,false);
         emulator.initParams(params,device,J2SEDevice.class);
         J2SEDeviceDisplay dd=(J2SEDeviceDisplay)DeviceFactory.getDevice().getDeviceDisplay();
-        dd.setDisplayRectangle(new Rectangle(0,0,480,800));
-        dd.setDisplayPaintable(new Rectangle(0,0,480,800));
+        int displayWidth=Integer.getInteger("army.test.width",480),displayHeight=Integer.getInteger("army.test.height",800);
+        dd.setDisplayRectangle(new Rectangle(0,0,displayWidth,displayHeight));
+        dd.setDisplayPaintable(new Rectangle(0,0,displayWidth,displayHeight));
         emulator.initMIDlet(true);
         app=MIDletBridge.getCurrentMIDlet();
         if(app==null) throw new AssertionError("MIDlet did not start");
@@ -87,7 +89,7 @@ public class EmulatorClient {
         int screenHeight=((Integer)canvasClass.getField("hieght").get(null)).intValue();
         int menuTop=(screenHeight-(4*36+22))/2;
         menu.getClass().getMethod("onPointerReleased",int.class,int.class,int.class)
-            .invoke(menu,240,menuTop+36+5,0);
+            .invoke(menu,displayWidth/2,menuTop+36+5,0);
         await(()->field(app,"login")!=null && canvasClass.getField("curScr").get(null)==field(app,"login"),"tap registration menu");
         Object login=field(app,"login");
         Object username=field(login,"username"), password=field(login,"password");
@@ -108,7 +110,7 @@ public class EmulatorClient {
         if(host) {
             int lobbyTop=(screenHeight-(4*36+22))/2;
             menu.getClass().getMethod("onPointerReleased",int.class,int.class,int.class)
-                .invoke(menu,240,lobbyTop+(mode.equals("boss")?36:0)+5,0);
+                .invoke(menu,displayWidth/2,lobbyTop+(mode.equals("boss")?36:0)+5,0);
             await(()->n(state(),"room")>0,"create room");
             Object roomCanvas=field(app,"arena");
             Display roomDisplay=Display.getDisplay((javax.microedition.midlet.MIDlet)app);
@@ -126,11 +128,19 @@ public class EmulatorClient {
             await(()->((Object[])field(state(),"rooms")).length>0,"room appears in lobby");
             int lobbyTop=(screenHeight-(5*36+22))/2;
             menu.getClass().getMethod("onPointerReleased",int.class,int.class,int.class)
-                .invoke(menu,240,lobbyTop+5*36+5,0);
+                .invoke(menu,displayWidth/2,lobbyTop+5*36+5,0);
             await(()->n(state(),"room")>0,"join room");
         }
         Object arena=field(app,"arena");
         await(()->Display.getDisplay((javax.microedition.midlet.MIDlet)app).getCurrent()==arena,"room canvas visible");
+        Object scene=field(arena,"scene");
+        if(!((Boolean)scene.getClass().getMethod("isLoaded").invoke(scene)).booleanValue() ||
+           ((Integer)scene.getClass().getMethod("mapWidth").invoke(scene)).intValue()!=800 ||
+           ((Integer)scene.getClass().getMethod("mapHeight").invoke(scene)).intValue()!=600 ||
+           ((Integer)scene.getClass().getMethod("tileCount").invoke(scene)).intValue()!=52)
+            throw new AssertionError("Original ice-bridge map resources failed to load");
+        if(field(arena,"soldier")==null || field(arena,"enemy")==null || field(arena,"boss")==null)
+            throw new AssertionError("Original player or boss sprite failed to load");
         Method roomTouch=arena.getClass().getDeclaredMethod("pointerReleased",int.class,int.class);
         roomTouch.setAccessible(true);
         roomTouch.invoke(arena,50,((Canvas)arena).getHeight()-55);
@@ -143,7 +153,51 @@ public class EmulatorClient {
         screenshot(output+"/"+role+"-room.png");
         if(host)roomTouch.invoke(arena,((Canvas)arena).getWidth()-50,((Canvas)arena).getHeight()-55);
         await(()->text(state(),"phase").equals("battle"),"server started battle");
+        int previousFrame=n(arena,"frame");
+        await(()->n(arena,"frame")>previousFrame,"battle animation advances");
         screenshot(output+"/"+role+"-battle.png");
+        if(mode.equals("duel") || (mode.equals("boss") && host)) {
+            int target=host?600:120;
+            int miniX=((Canvas)arena).getWidth()-87+6+target*70/720;
+            roomTouch.invoke(arena,miniX,20);
+            if(Math.abs(n(arena,"manualFocus")-target)>20)throw new AssertionError("Minimap camera selection failed");
+            screenshot(output+"/"+role+"-camera.png");
+        }
+        if(mode.equals("duel")) {
+            int row=((Canvas)arena).getHeight()-73,w=((Canvas)arena).getWidth()/5;
+            File rejected=new File(output,"guest-not-turn.txt");
+            if(!host) {
+                await(()->n(state(),"seq")==1 && n(state(),"turn")!=n(state(),"uid"),"guest is not first player");
+                roomTouch.invoke(arena,5,row+45); // Move while it is not your turn.
+                roomTouch.invoke(arena,4*w+5,row+10); // Shoot while it is not your turn.
+                Thread.sleep(500);
+                if(n(state(),"seq")!=1)throw new AssertionError("Out-of-turn touch changed server state");
+                Files.write(rejected.toPath(),new byte[]{1});
+                await(()->n(state(),"turn")==n(state(),"uid") && n(state(),"seq")>=3,"guest turn after host fires");
+                Object[] before=(Object[])field(state(),"players");
+                if(n(before[1],"hp")!=115)throw new AssertionError("Guest did not see the host hit");
+                int old=n(state(),"seq");roomTouch.invoke(arena,5,row+45);
+                await(()->n(state(),"seq")>old && n(((Object[])field(state(),"players"))[1],"x")==570,"guest moves left");
+                set(arena,"angle",Integer.valueOf(135));set(arena,"power",Integer.valueOf(65));
+                roomTouch.invoke(arena,4*w+5,row+10);
+            } else {
+                await(()->rejected.exists(),"guest tried out-of-turn actions");
+                int old=n(state(),"seq");roomTouch.invoke(arena,w+5,row+45);
+                await(()->n(state(),"seq")>old && n(((Object[])field(state(),"players"))[0],"x")==150,"host moves right");
+                set(arena,"angle",Integer.valueOf(45));set(arena,"power",Integer.valueOf(68));
+                roomTouch.invoke(arena,4*w+5,row+10);
+            }
+            await(()->n(state(),"seq")>=5,"both players have fired");
+            Object[] members=(Object[])field(state(),"players");
+            if(n(members[0],"x")!=150 || n(members[1],"x")!=570 ||
+               n(members[0],"hp")!=115 || n(members[1],"hp")!=115)
+                throw new AssertionError("Two-player state mismatch after exchange");
+            screenshot(output+"/"+role+"-exchange.png");
+            Files.write(new File(output,role+"-result.txt").toPath(),
+                ("mode=duel host=150/115 guest=570/115 seq="+n(state(),"seq")).getBytes("UTF-8"));
+            await(()->new File(output,(host?"guest":"host")+"-result.txt").exists(),"both observed the exchange");
+            return;
+        }
         if(host && mode.equals("pvp")) {
             int row=((Canvas)arena).getHeight()-73, w=((Canvas)arena).getWidth()/5;
             int oldAngle=n(arena,"angle"), oldPower=n(arena,"power"), oldSeq=n(state(),"seq");

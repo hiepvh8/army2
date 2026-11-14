@@ -6,6 +6,7 @@ Mục tiêu là giữ engine, map, vũ khí, boss, nâng cấp và trải nghi�
 
 - JAR mới giữ nguyên 1.192 class và toàn bộ tài nguyên của `IOS_TuTien.jar`; thêm giao diện đăng nhập, lobby và mục nhân vật. Bản JAR gốc không bị sửa.
 - Server mới có đăng ký, đăng nhập, mật khẩu băm, phiên, phòng thử nghiệm và SQLite. Trận thử nghiệm diễn ra trên server và dữ liệu thưởng của nó độc lập với nhân vật gốc.
+- Màn đấu thử nghiệm hiển thị map Cây cầu băng, nền, sprite và biểu tượng từ JAR gốc; chạm bản đồ nhỏ để chuyển camera. **Các khối băng chỉ là hình ảnh**: va chạm, phá địa hình và luật đạn gốc chưa được chuyển lên server.
 - Mục **NHÂN VẬT GỐC** cho mở nhân vật đã tạo trong cùng bản JAR, lưu/tải bản nhân vật `AVP1` của game gốc theo tài khoản, và khôi phục dự phòng trên máy. Đây là lưu trữ thủ công, không phải đồng bộ liên tục.
 - Máy chủ từ chối lưu khi phiên bản trên server đã thay đổi. Có nút **GHI ĐÈ SERVER** để người chơi chủ động chọn bản trên máy: bản server được lưu dự phòng trên thiết bị trước, và server vẫn kiểm tra phiên bản khi ghi.
 - Kiểm thử MicroEmulator dùng hai phiên JAR độc lập, dữ liệu RMS trên đĩa, HTTPS với chứng chỉ thử nghiệm được tin cậy và nhiều lần khởi động lại để kiểm tra tải, phục hồi, giải quyết xung đột; đã đi vào boss offline và gọi bắn bằng engine gốc. Điều đó **không chứng minh multiplayer gốc** và chưa chứng minh hoạt động trên Manic EMU/iOS.

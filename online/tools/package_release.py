@@ -12,8 +12,8 @@ with tarfile.open(out, 'w:gz') as archive:
         for path in sorted((root / folder).glob(pattern)):
             if path.is_file():
                 archive.add(path, arcname='army2-online/' + str(path.relative_to(root)))
-    for path in [root / 'README.vi.md', *sorted((root / 'docs').glob('*.md'))]:
-        archive.add(path, arcname='army2-online/' + str(path.relative_to(root)))
-    for path in sorted((root / 'docs/screenshots').glob('*.png')):
-        archive.add(path, arcname='army2-online/' + str(path.relative_to(root)))
+    archive.add(root / 'README.vi.md', arcname='army2-online/README.vi.md')
+    for path in sorted((root / 'docs').rglob('*')):
+        if path.is_file() and not path.is_symlink() and path.suffix.lower() in ('.md', '.png', '.json', '.txt'):
+            archive.add(path, arcname='army2-online/' + str(path.relative_to(root)))
 print(out)

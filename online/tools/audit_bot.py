@@ -19,6 +19,7 @@ with (out/'audit.log').open('w') as log:
 log=(out/'audit.log').read_text()
 assert 'BOT_AUDIT_PASS' in log
 for line in log.splitlines():
-    if line.startswith(('BOT_TURN_INDEX=','BOT_SHOT_OBSERVED=','BOT_AUDIT_PASS')):
+    if line.startswith(('BOT_TURN_INDEX=','BOT_SHOT_OBSERVED=','BOT_PLAYER_MOVE=',
+                        'BOT_AIM ', 'BOT_HP_PLAYER=', 'BOT_AUDIT_PASS')):
         print(line)
 print('Images and complete log:',out)

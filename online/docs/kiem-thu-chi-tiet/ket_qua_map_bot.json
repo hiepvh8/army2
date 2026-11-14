@@ -1,0 +1,582 @@
+[
+  {
+    "slot": 0,
+    "exit": 0,
+    "selected": [
+      "MAP_SELECTED",
+      "0",
+      "Cây cầu băng"
+    ],
+    "result": [
+      "MAP_RESULT",
+      "0",
+      "0",
+      "800",
+      "600",
+      "52",
+      "0"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  {
+    "slot": 1,
+    "exit": 0,
+    "selected": [
+      "MAP_SELECTED",
+      "1",
+      "Khu năng lượng"
+    ],
+    "result": [
+      "MAP_RESULT",
+      "1",
+      "1",
+      "800",
+      "600",
+      "68",
+      "0"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  {
+    "slot": 2,
+    "exit": 0,
+    "selected": [
+      "MAP_SELECTED",
+      "2",
+      "Căn cứ thép"
+    ],
+    "result": [
+      "MAP_RESULT",
+      "2",
+      "2",
+      "800",
+      "600",
+      "76",
+      "0"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  {
+    "slot": 3,
+    "exit": 0,
+    "selected": [
+      "MAP_SELECTED",
+      "3",
+      "Sân bay"
+    ],
+    "result": [
+      "MAP_RESULT",
+      "3",
+      "3",
+      "800",
+      "600",
+      "78",
+      "0"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  {
+    "slot": 4,
+    "exit": 0,
+    "selected": [
+      "MAP_SELECTED",
+      "4",
+      "Đảo uốn lượn"
+    ],
+    "result": [
+      "MAP_RESULT",
+      "4",
+      "4",
+      "800",
+      "600",
+      "9",
+      "0"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  {
+    "slot": 5,
+    "exit": 0,
+    "selected": [
+      "MAP_SELECTED",
+      "5",
+      "Sinh tử"
+    ],
+    "result": [
+      "MAP_RESULT",
+      "5",
+      "5",
+      "500",
+      "500",
+      "31",
+      "0"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  {
+    "slot": 6,
+    "exit": 0,
+    "selected": [
+      "MAP_SELECTED",
+      "6",
+      "Kim tự tháp"
+    ],
+    "result": [
+      "MAP_RESULT",
+      "6",
+      "6",
+      "800",
+      "400",
+      "64",
+      "0"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  {
+    "slot": 7,
+    "exit": 0,
+    "selected": [
+      "MAP_SELECTED",
+      "7",
+      "Cầu vồng băng"
+    ],
+    "result": [
+      "MAP_RESULT",
+      "7",
+      "7",
+      "800",
+      "400",
+      "18",
+      "0"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  {
+    "slot": 8,
+    "exit": 0,
+    "selected": [
+      "MAP_SELECTED",
+      "8",
+      "Vách núi"
+    ],
+    "result": [
+      "MAP_RESULT",
+      "8",
+      "8",
+      "435",
+      "600",
+      "42",
+      "0"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  {
+    "slot": 9,
+    "exit": 0,
+    "selected": [
+      "MAP_SELECTED",
+      "9",
+      "Chiến trường"
+    ],
+    "result": [
+      "MAP_RESULT",
+      "9",
+      "9",
+      "600",
+      "620",
+      "12",
+      "0"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  {
+    "slot": 10,
+    "exit": 0,
+    "selected": [
+      "MAP_SELECTED",
+      "10",
+      "Đảo vòng cung"
+    ],
+    "result": [
+      "MAP_RESULT",
+      "10",
+      "10",
+      "800",
+      "400",
+      "20",
+      "0"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  {
+    "slot": 11,
+    "exit": 0,
+    "selected": [
+      "MAP_SELECTED",
+      "11",
+      "Đảo mây"
+    ],
+    "result": [
+      "MAP_RESULT",
+      "11",
+      "11",
+      "850",
+      "600",
+      "21",
+      "0"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  {
+    "slot": 12,
+    "exit": 0,
+    "selected": [
+      "MAP_SELECTED",
+      "12",
+      "Thang mây"
+    ],
+    "result": [
+      "MAP_RESULT",
+      "12",
+      "12",
+      "850",
+      "600",
+      "10",
+      "0"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  {
+    "slot": 13,
+    "exit": 0,
+    "selected": [
+      "MAP_SELECTED",
+      "13",
+      "Không lối thoát"
+    ],
+    "result": [
+      "MAP_RESULT",
+      "13",
+      "13",
+      "700",
+      "500",
+      "26",
+      "0"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  {
+    "slot": 14,
+    "exit": 0,
+    "selected": [
+      "MAP_SELECTED",
+      "14",
+      "Cầu sắt"
+    ],
+    "result": [
+      "MAP_RESULT",
+      "14",
+      "14",
+      "800",
+      "300",
+      "78",
+      "0"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  {
+    "slot": 15,
+    "exit": 0,
+    "selected": [
+      "MAP_SELECTED",
+      "15",
+      "Bám trụ"
+    ],
+    "result": [
+      "MAP_RESULT",
+      "15",
+      "15",
+      "500",
+      "700",
+      "105",
+      "0"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  {
+    "slot": 16,
+    "exit": 0,
+    "selected": [
+      "MAP_SELECTED",
+      "16",
+      "Lưới sắt"
+    ],
+    "result": [
+      "MAP_RESULT",
+      "16",
+      "16",
+      "800",
+      "600",
+      "78",
+      "0"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  {
+    "slot": 17,
+    "exit": 0,
+    "selected": [
+      "MAP_SELECTED",
+      "17",
+      "Thoát thân"
+    ],
+    "result": [
+      "MAP_RESULT",
+      "17",
+      "17",
+      "800",
+      "600",
+      "109",
+      "0"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  {
+    "slot": 18,
+    "exit": 0,
+    "selected": [
+      "MAP_SELECTED",
+      "18",
+      "Thiên đường"
+    ],
+    "result": [
+      "MAP_RESULT",
+      "18",
+      "18",
+      "860",
+      "500",
+      "41",
+      "0"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  {
+    "slot": 19,
+    "exit": 0,
+    "selected": [
+      "MAP_SELECTED",
+      "19",
+      "Miền đất hứa"
+    ],
+    "result": [
+      "MAP_RESULT",
+      "19",
+      "19",
+      "900",
+      "600",
+      "41",
+      "0"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  {
+    "slot": 20,
+    "exit": 0,
+    "selected": [
+      "MAP_SELECTED",
+      "20",
+      "Mê cung"
+    ],
+    "result": [
+      "MAP_RESULT",
+      "20",
+      "20",
+      "900",
+      "600",
+      "65",
+      "0"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  {
+    "slot": 21,
+    "exit": 0,
+    "selected": [
+      "MAP_SELECTED",
+      "21",
+      "Hang đá"
+    ],
+    "result": [
+      "MAP_RESULT",
+      "21",
+      "21",
+      "900",
+      "400",
+      "37",
+      "0"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  {
+    "slot": 22,
+    "exit": 0,
+    "selected": [
+      "MAP_SELECTED",
+      "22",
+      "Cây cầu dừa"
+    ],
+    "result": [
+      "MAP_RESULT",
+      "22",
+      "22",
+      "905",
+      "600",
+      "34",
+      "0"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  {
+    "slot": 23,
+    "exit": 0,
+    "selected": [
+      "MAP_SELECTED",
+      "23",
+      "Đền tế"
+    ],
+    "result": [
+      "MAP_RESULT",
+      "23",
+      "23",
+      "905",
+      "600",
+      "50",
+      "0"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  {
+    "slot": 24,
+    "exit": 0,
+    "selected": [
+      "MAP_SELECTED",
+      "24",
+      "Bong bóng 1"
+    ],
+    "result": [
+      "MAP_RESULT",
+      "24",
+      "24",
+      "800",
+      "600",
+      "28",
+      "0"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  {
+    "slot": 25,
+    "exit": 0,
+    "selected": [
+      "MAP_SELECTED",
+      "25",
+      "Bong bóng 2"
+    ],
+    "result": [
+      "MAP_RESULT",
+      "25",
+      "25",
+      "800",
+      "600",
+      "31",
+      "0"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  {
+    "slot": 26,
+    "exit": 0,
+    "selected": [
+      "MAP_SELECTED",
+      "26",
+      "Cầu vồng"
+    ],
+    "result": [
+      "MAP_RESULT",
+      "26",
+      "26",
+      "800",
+      "600",
+      "43",
+      "0"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  {
+    "slot": 27,
+    "exit": 0,
+    "selected": [
+      "MAP_SELECTED",
+      "28",
+      "Halloween"
+    ],
+    "result": [
+      "MAP_RESULT",
+      "28",
+      "28",
+      "800",
+      "500",
+      "35",
+      "0"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  {
+    "slot": 28,
+    "exit": 0,
+    "selected": [
+      "MAP_SELECTED",
+      "29",
+      "Halloween 2"
+    ],
+    "result": [
+      "MAP_RESULT",
+      "29",
+      "29",
+      "800",
+      "500",
+      "34",
+      "0"
+    ],
+    "errors": [],
+    "passed": true
+  }
+]

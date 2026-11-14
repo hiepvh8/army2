@@ -37,8 +37,33 @@ public final class BotAudit extends EmulatorClient {
     waitFor(()->cur().getClass().getName().equals("screen.GameScr"),"bot battle");snapshot("03-bot-battle");
     Class<?> pm=loader.loadClass("player.PM"), ai=loader.loadClass("com.teamobi.mobiarmy2.OfflinePvpBotAI");
     Object player=pm.getMethod("getMyPlayer").invoke(null);if(player==null)throw new AssertionError("no local player");
-    player.getClass().getField("angle").setInt(player,45);player.getClass().getField("force").setByte(player,(byte)30);
-    player.getClass().getMethod("shoot").invoke(player);if(player.getClass().getField("lastForcePoint").getInt(player)!=30)throw new AssertionError("shot not sent");
+    Class<?> cp=loader.loadClass("player.CPlayer"), hpClass=loader.loadClass("com.teamobi.mobiarmy2.LongHp");
+    Method hp=hpClass.getMethod("hp",cp);Object[] combatants=(Object[])pm.getField("p").get(null);
+    int botIndex=loader.loadClass("com.teamobi.mobiarmy2.OfflinePvpBot").getField("activeSquadCount").getInt(null);
+    Object bot=combatants[botIndex];if(bot==null)throw new AssertionError("bot missing");
+    long playerBefore=((Long)hp.invoke(null,player)).longValue(),botBefore=((Long)hp.invoke(null,bot)).longValue();
+    int xBefore=cp.getField("x").getInt(player);boolean[] keys=(boolean[])canvas.getField("keyHold").get(null);
+    keys[6]=true;Thread.sleep(500);keys[6]=false;Thread.sleep(300);
+    int xAfter=cp.getField("x").getInt(player);
+    System.out.println("BOT_PLAYER_MOVE="+xBefore+"->"+xAfter);
+    Class<?> sim=loader.loadClass("com.teamobi.mobiarmy2.OfflineBulletSim"),combat=loader.loadClass("com.teamobi.mobiarmy2.OfflineCombat");
+    Method paths=sim.getMethod("buildAllPaths",cp,byte.class,byte.class,byte.class);
+    Method distance=combat.getMethod("distanceSqToHitBox",cp,int.class,int.class);
+    byte type=((Byte)cp.getMethod("resolveCurrentShotBulletType").invoke(player)).byteValue();
+    int bestAngle=45,bestForce=30,bestDistance=Integer.MAX_VALUE;
+    for(int angle=10;angle<=89 && bestDistance>0;angle+=2)for(int force=3;force<=30;force++){
+      cp.getField("angle").setInt(player,angle);
+      short[][][] result=(short[][][])paths.invoke(null,player,type,(byte)force,(byte)0);
+      if(result==null)continue;
+      for(int i=0;i<result.length;i++)if(result[i]!=null && result[i].length>=2 && result[i][0]!=null && result[i][0].length>0){
+        int lastPoint=result[i][0].length-1;
+        int dist=((Integer)distance.invoke(null,bot,(int)result[i][0][lastPoint],(int)result[i][1][lastPoint])).intValue();
+        if(dist<bestDistance){bestDistance=dist;bestAngle=angle;bestForce=force;}
+      }
+    }
+    System.out.println("BOT_AIM angle="+bestAngle+" force="+bestForce+" endpoint_distance_sq="+bestDistance);
+    cp.getField("angle").setInt(player,bestAngle);cp.getField("force").setByte(player,(byte)bestForce);
+    cp.getMethod("shoot").invoke(player);if(cp.getField("lastForcePoint").getInt(player)!=bestForce)throw new AssertionError("shot not sent");
     snapshot("04-player-shot");Field last=ai.getDeclaredField("lastBotIndex");last.setAccessible(true);
     waitFor(()->last.getInt(null)>=0,"bot started its turn");System.out.println("BOT_TURN_INDEX="+last.getInt(null));snapshot("05-bot-turn");
     Field flying=ai.getDeclaredField("shotInFlight");flying.setAccessible(true);
@@ -46,5 +71,10 @@ public final class BotAudit extends EmulatorClient {
     while(System.currentTimeMillis()<deadline){if(flying.getBoolean(null)){shot=true;break;}Thread.sleep(50);}
     System.out.println("BOT_SHOT_OBSERVED="+shot);snapshot("06-bot-observed");
     if(!shot)throw new AssertionError("Bot shot not observed during test window");
+    deadline=System.currentTimeMillis()+25000;
+    while(System.currentTimeMillis()<deadline && flying.getBoolean(null))Thread.sleep(100);
+    Thread.sleep(500);
+    long playerAfter=((Long)hp.invoke(null,player)).longValue(),botAfter=((Long)hp.invoke(null,bot)).longValue();
+    System.out.println("BOT_HP_PLAYER="+playerBefore+"->"+playerAfter+" BOT_HP_BOT="+botBefore+"->"+botAfter);
   }
 }

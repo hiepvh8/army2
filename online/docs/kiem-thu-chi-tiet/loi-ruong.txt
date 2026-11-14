@@ -1,0 +1,14 @@
+LAN DA THAY LOI (JAR menu b439, RAM tam):
+java.lang.NullPointerException: Cannot invoke "String.length()" because "<parameter2>" is null
+	at model.Font.drawStringBase120(Unknown Source)
+	at com.teamobi.mobiarmy2.Compact120.draw(Compact120.java:8)
+	at model.Font.drawString(Unknown Source)
+	at screen.Inventory.paint(Unknown Source)
+	at coreLG.CCanvas.paint(Unknown Source)
+	at com.teamobi.mobiarmy2.MotherCanvas.paint(Unknown Source)
+	at javax.microedition.lcdui.Display$DisplayAccessor.paint(Display.java:302)
+
+BA LAN THU LAI (JAR 25f4, RAM moi):
+Lan 1: NullPointerException=khong, NAV_DONE=co
+Lan 2: NullPointerException=khong, NAV_DONE=co
+Lan 3: NullPointerException=khong, NAV_DONE=co

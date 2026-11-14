@@ -1,5 +1,7 @@
 # Kết quả kiểm thử từng màn hình — ARMY2 Online v0.1
 
+Đây là ảnh và kết quả lịch sử trước khi đổi đồ họa sân thử nghiệm sang map băng. Xem [báo cáo kiểm thử gần nhất](kiem-thu-chi-tiet/BAO_CAO.vi.md) để biết giao diện và phạm vi hiện tại.
+
 Các ảnh bên dưới được chụp từ JAR build trong MicroEmulator bằng **tài khoản thử nghiệm** và server local có database tạm. Đây là giả lập Java ME, chưa phải Manic EMU trên iPhone. Không dùng tài khoản thật hay database đang vận hành của bạn.
 
 ## Màn hình chính

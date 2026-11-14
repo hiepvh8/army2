@@ -11,6 +11,7 @@
 - Nhân vật gốc có thể lưu/tải thủ công theo tài khoản; server kiểm tra phiên bản và thiết bị dự phòng trước khi thay nhân vật.
 - Lobby, tạo/vào phòng, sẵn sàng, chủ phòng bắt đầu.
 - PvP 1v1; boss phối hợp 2–4 người. Server quản lý lượt, vị trí, HP, đường đạn, sát thương, AI, kết quả và thưởng.
+- Trận thử nghiệm dùng hình nền, sprite và dữ liệu 52 khối của map **Cây cầu băng** từ JAR gốc. Chạm bản đồ nhỏ ở góc phải để chuyển góc nhìn; khi có đường đạn, camera theo đạn.
 - Mỗi lượt 30 giây, di chuyển tối đa một lần; lệnh cũ/sai lượt bị từ chối.
 - Mất mạng: vào lại cùng tài khoản để lấy trạng thái hiện tại. Sau 90 giây không còn người đang sống kết nối, trận kết thúc không thưởng. Server restart làm mất phòng đang chơi; tài khoản/tiền/thưởng đã chốt vẫn còn.
 - Sự kiện ngày: thắng boss 2 lần, nhận 200 xu một lần/ngày (ngày theo Asia/Bangkok). Mỗi trận boss thắng nhận 100 xu/người; PvP thắng nhận 50 xu. Bỏ cuộc không sinh tiền.
@@ -48,6 +49,12 @@ python3 tools/test_profiles_emulator.py
 
 Script chạy cả PvP và boss, điều khiển form đăng ký/nút bắn của JAR, chạy PvP qua HTTP loopback và boss qua HTTPS với CA thử nghiệm được tin cậy tạm thời, đọc kết quả và lưu ảnh trong `test-results/`. Emulator dùng để kiểm thử là MicroEmulator; **không thay thế việc kiểm thử Manic EMU trên iOS**.
 
+Kiểm tra hai người lần lượt di chuyển, bắn trúng nhau và chọn camera trên màn hình nhỏ:
+
+```bash
+ARMY_TEST_WIDTH=240 ARMY_TEST_HEIGHT=320 python3 tools/test_emulator.py duel
+```
+
 ## Đưa vào Manic EMU trên iPhone/iPad
 
 1. Triển khai backend HTTPS theo `docs/EC2.vi.md`.
@@ -55,7 +62,7 @@ Script chạy cả PvP và boss, điều khiển form đăng ký/nút bắn củ
 3. Trong menu game chọn **MÁY CHỦ**, nhập `https://game.tenmiencuaban.com` (không thêm `/jme`) rồi chọn **Lưu**. Lưu địa chỉ mới sẽ xóa phiên online cũ để tránh gửi token sang server khác.
 4. Chọn **ĐĂNG KÝ** hoặc **ĐĂNG NHẬP**, nhập tên 3–16 ký tự ASCII, bắt đầu bằng chữ; mật khẩu 10–128 ký tự. Chạm ô nhập để mở bàn phím. Đây là tài khoản của backend mới, không phải tài khoản AnhVu Cloud.
 5. Máy A tạo phòng PvP hoặc boss; máy B vào phòng. Tất cả chọn **Sẵn sàng**, chủ phòng chọn **Bắt đầu**.
-6. Chạm **Góc -/+**, **Lực -/+**, **BẮN**. Phím 4/6 chỉnh góc; 2/8 chỉnh lực; 5 bắn; 1/3 di chuyển. Góc 45 bắn sang phải, 135 sang trái.
+6. Chạm **Góc -/+**, **Lực -/+**, **BẮN**. Phím 4/6 chỉnh góc; 2/8 chỉnh lực; 5 bắn; 1/3 di chuyển. Góc 45 bắn sang phải, 135 sang trái. Chạm vị trí trên bản đồ nhỏ ở góc phải để chuyển góc nhìn.
 7. Sau trận chọn **Rời phòng** để tạo trận mới. Mục sự kiện trong lobby cho nhận thưởng khi đủ điều kiện.
 
 `127.0.0.1` trên iPhone là iPhone, không phải EC2. Địa chỉ loopback mặc định chỉ dùng kiểm thử trên cùng máy. Client chỉ cho HTTP ở loopback; kết nối từ xa dùng HTTPS có chứng chỉ hợp lệ. Không tắt kiểm tra TLS để vượt lỗi chứng chỉ.
@@ -78,7 +85,7 @@ python3 tools/package_release.py
 - `server/profiles.py`: xác thực container AVP1, lưu dữ liệu gốc theo tài khoản với số phiên bản. Đây là dữ liệu do máy chơi cung cấp, chưa phải nhân vật/chỉ số đáng tin để tính kết quả online.
 - `client/src/army2/online`: Java ME bổ sung. Poll trạng thái khoảng 0,9 giây/lần; mọi lệnh chiến đấu mang sequence. Không tự retry lệnh bắn sau lỗi mạng: poll sẽ xác nhận trạng thái server.
 - Tất cả người chơi online bắt đầu cùng HP/vũ khí để kiểm thử công bằng; không nhận tiền/chỉ số/trang bị từ save cũ. Xu online hiện là tiến trình thử nghiệm, chưa có shop hoặc giao dịch.
-- Vật lý online v1 hiện là một đạn parabol, bản đồ sàn phẳng, không gió/phá địa hình. Không phải bản port chính xác `OfflineBulletSim`. Boss là một AI đơn giản, dùng sprite gốc; chưa port toàn bộ boss/kỹ năng cũ.
+- Hình map băng được đọc từ dữ liệu map gốc, nhưng **server vẫn tính vật lý thử nghiệm trên sàn phẳng**. Các cầu băng phía trên chỉ là hình ảnh: đạn và nhân vật chưa va chạm hay phá các khối đó. Màn trận có ghi rõ giới hạn này. Vật lý hiện là một đạn parabol, không gió/phá địa hình; chưa phải `OfflineBulletSim`. Boss là AI đơn giản dùng sprite gốc, chưa phải toàn bộ boss/kỹ năng cũ.
 - Chưa có chat, xếp hạng, bang hội, matchmaking tự động, chống nhiều tài khoản, khôi phục trận qua server restart hoặc công cụ admin web. Sự kiện hiện là nhiệm vụ ngày cố định; chưa phải hệ thống sự kiện tùy chỉnh đầy đủ.
 - Tối đa 64 phòng, 4 người/phòng; đây là giới hạn bảo vệ tài nguyên, **không phải số tải đã đo**. Chưa kiểm thử tải đông người và chưa kiểm thử trực tiếp trên Manic EMU.
 

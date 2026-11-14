@@ -27,10 +27,18 @@ def main():
     classes.mkdir(parents=True, exist_ok=True)
     subprocess.run(['java', '-jar', str(ROOT / '.tools/ecj.jar'), '-1.8', '-nowarn', '-classpath', str(emulator),
                     '-d', str(classes), str(ROOT / 'tests/EmulatorClient.java')], check=True)
-    for mode in ('pvp', 'boss', 'offline'):
-        output = ROOT / 'test-results' / mode
+    modes = sys.argv[1:] or ['duel', 'pvp', 'boss', 'offline']
+    if any(mode not in ('duel', 'pvp', 'boss', 'offline') for mode in modes):
+        raise SystemExit('Modes: duel, pvp, boss, offline')
+    width, height = int(os.getenv('ARMY_TEST_WIDTH','480')), int(os.getenv('ARMY_TEST_HEIGHT','800'))
+    if not (200 <= width <= 1024 and 240 <= height <= 1024):
+        raise SystemExit('Unsupported test screen dimensions')
+    for mode in modes:
+        suffix = '' if (width,height)==(480,800) else f'-{width}x{height}'
+        output = ROOT / 'test-results' / (mode + suffix)
         output.mkdir(parents=True, exist_ok=True)
         (output / 'room.txt').unlink(missing_ok=True)
+        (output / 'guest-not-turn.txt').unlink(missing_ok=True)
         for role in ('host', 'guest'):
             (output / (role+'-result.txt')).unlink(missing_ok=True)
         with tempfile.TemporaryDirectory() as tmp:
@@ -63,7 +71,7 @@ def main():
                     shutil.rmtree(output / (role + '-rms'), ignore_errors=True)
                     log = (output / (role + '.log')).open('w')
                     logs.append(log)
-                    cmd = ['java', *java_tls, '-Djava.awt.headless=true', '-Dmicroemulator.config.path=' + str(Path(tmp) / role), '-cp', str(classes) + os.pathsep + str(emulator),
+                    cmd = ['java', *java_tls, '-Djava.awt.headless=true', '-Darmy.test.width='+str(width), '-Darmy.test.height='+str(height), '-Dmicroemulator.config.path=' + str(Path(tmp) / role), '-cp', str(classes) + os.pathsep + str(emulator),
                            'EmulatorClient', str(ROOT / 'dist/ARMY2_Online_IOS.jar'),
                            scheme + '://127.0.0.1:' + str(http.server_port), str(output), role, mode]
                     processes.append(subprocess.Popen(cmd, cwd=output, stdout=log, stderr=log))
@@ -82,7 +90,7 @@ def main():
                 for log in logs:
                     log.close()
                 http.shutdown(); http.server_close(); worker.join(); app.game.db.close()
-    print('PASS: two real MIDlets completed PvP and cooperative boss battles; original offline entry opens.')
+    print('PASS: requested emulator modes completed: ' + ', '.join(modes))
 
 
 if __name__ == '__main__':
