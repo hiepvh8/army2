@@ -184,6 +184,14 @@ class OnlineTests(unittest.TestCase):
         token = self.call('login', name='Alice', password='Alice-pass-123')['token']
         self.assertEqual(self.call('poll', token)['user']['name'], 'Alice')
 
+    def test_repeated_login_attempts_are_rate_limited(self):
+        # setUp creates two accounts; both count towards the 20/minute IP budget.
+        for _ in range(18):
+            with self.assertRaisesRegex(GameError, 'Sai tai khoan'):
+                self.call('login', name='Alice', password='incorrect-password')
+        with self.assertRaisesRegex(GameError, 'Qua nhieu yeu cau'):
+            self.call('login', name='Alice', password='incorrect-password')
+
     def test_public_snapshot_cannot_mutate_server(self):
         self.battle()
         with self.app.lock:

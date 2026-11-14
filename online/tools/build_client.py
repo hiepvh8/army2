@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import subprocess
 import urllib.request
+from urllib.parse import urlsplit
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -19,15 +20,29 @@ ARTIFACTS = {
 SOURCE_SHA = '27c94dc245cb70fe9514f9906a0a57209e63aaca2e670027b23037a606b95cc4'
 
 
+def valid_server(endpoint):
+    if not endpoint.isascii() or any(ord(c) <= 32 or c in '@\\?#' for c in endpoint):
+        return False
+    try:
+        parsed = urlsplit(endpoint)
+        host = parsed.hostname or ''
+        port = parsed.port
+    except ValueError:
+        return False
+    if not host or any(not (c.isalnum() or c in '.-') for c in host) or host.startswith('.') or host.endswith('.'):
+        return False
+    if parsed.netloc.endswith(':') or (port is not None and not 1 <= port <= 65535):
+        return False
+    return parsed.scheme == 'https' or (parsed.scheme == 'http' and host in ('localhost', '127.0.0.1') and port is not None)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--server', default='http://127.0.0.1:8080')
     args = parser.parse_args()
     endpoint = args.server.rstrip('/')
-    if not (endpoint.startswith('https://') or endpoint.startswith('http://127.0.0.1:') or endpoint.startswith('http://localhost:')):
-        parser.error('Use HTTPS for a remote server, HTTP only for loopback development.')
-    if any(c in endpoint for c in '\r\n') or len(endpoint) > 220 or not endpoint.isascii():
-        parser.error('Invalid server URL')
+    if len(endpoint) > 220 or not valid_server(endpoint):
+        parser.error('Use a valid HTTPS server URL, or HTTP with a loopback host and port for local development.')
     tools, build, dist = [ROOT / n for n in ('.tools', 'build', 'dist')]
     for p in (tools, build / 'classes', dist):
         p.mkdir(parents=True, exist_ok=True)

@@ -31,6 +31,8 @@ def main():
         output = ROOT / 'test-results' / mode
         output.mkdir(parents=True, exist_ok=True)
         (output / 'room.txt').unlink(missing_ok=True)
+        for role in ('host', 'guest'):
+            (output / (role+'-result.txt')).unlink(missing_ok=True)
         with tempfile.TemporaryDirectory() as tmp:
             app = Application(str(Path(tmp) / 'game.db'))
             http = make_server('127.0.0.1', 0, app)

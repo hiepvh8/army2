@@ -104,11 +104,21 @@ public class EmulatorClient {
         login.getClass().getMethod("submit").invoke(login);
         await(()->state()!=null,"register and decode binary response");
         await(()->canvasClass.getField("curScr").get(null)==menu && ((Boolean)field(menu,"lobby")),"game-style online lobby");
+        screenshot(output+"/"+role+"-lobby.png");
         if(host) {
             int lobbyTop=(screenHeight-(3*36+22))/2;
             menu.getClass().getMethod("onPointerReleased",int.class,int.class,int.class)
                 .invoke(menu,240,lobbyTop+(mode.equals("boss")?36:0)+5,0);
             await(()->n(state(),"room")>0,"create room");
+            Object roomCanvas=field(app,"arena");
+            Display roomDisplay=Display.getDisplay((javax.microedition.midlet.MIDlet)app);
+            await(()->roomDisplay.getCurrent()==roomCanvas,"created room visible");
+            Method roomInput=roomCanvas.getClass().getDeclaredMethod("pointerReleased",int.class,int.class);
+            roomInput.setAccessible(true);
+            roomInput.invoke(roomCanvas,((Canvas)roomCanvas).getWidth()-50,((Canvas)roomCanvas).getHeight()-55);
+            await(()->roomDisplay.getCurrent() instanceof Alert,"start without enough players shows error");
+            screenshot(output+"/"+role+"-room-error.png");
+            roomDisplay.setCurrent((Displayable)roomCanvas);
             Files.write(new File(output,"room.txt").toPath(),String.valueOf(n(state(),"room")).getBytes("UTF-8"));
         } else {
             await(()->new File(output,"room.txt").exists(),"host room file");
@@ -119,7 +129,11 @@ public class EmulatorClient {
                 .invoke(menu,240,lobbyTop+4*36+5,0);
             await(()->n(state(),"room")>0,"join room");
         }
-        command("ready","");
+        Object arena=field(app,"arena");
+        await(()->Display.getDisplay((javax.microedition.midlet.MIDlet)app).getCurrent()==arena,"room canvas visible");
+        Method roomTouch=arena.getClass().getDeclaredMethod("pointerReleased",int.class,int.class);
+        roomTouch.setAccessible(true);
+        roomTouch.invoke(arena,50,((Canvas)arena).getHeight()-55);
         await(()->{
             Object[] players=(Object[])field(state(),"players");
             if(players.length<2)return false;
@@ -127,9 +141,25 @@ public class EmulatorClient {
             return true;
         },"both players ready");
         screenshot(output+"/"+role+"-room.png");
-        if(host)command("start","");
+        if(host)roomTouch.invoke(arena,((Canvas)arena).getWidth()-50,((Canvas)arena).getHeight()-55);
         await(()->text(state(),"phase").equals("battle"),"server started battle");
         screenshot(output+"/"+role+"-battle.png");
+        if(host && mode.equals("pvp")) {
+            int row=((Canvas)arena).getHeight()-73, w=((Canvas)arena).getWidth()/5;
+            int oldAngle=n(arena,"angle"), oldPower=n(arena,"power"), oldSeq=n(state(),"seq");
+            roomTouch.invoke(arena,5,row+10);
+            if(n(arena,"angle")!=oldAngle-1)throw new AssertionError("angle minus");
+            roomTouch.invoke(arena,w+5,row+10);
+            if(n(arena,"angle")!=oldAngle)throw new AssertionError("angle plus");
+            roomTouch.invoke(arena,2*w+5,row+10);
+            if(n(arena,"power")!=oldPower-1)throw new AssertionError("power minus");
+            roomTouch.invoke(arena,3*w+5,row+10);
+            if(n(arena,"power")!=oldPower)throw new AssertionError("power plus");
+            roomTouch.invoke(arena,w+5,row+45);
+            await(()->n(state(),"seq")>oldSeq,"touch movement updates turn");
+            Object[] members=(Object[])field(state(),"players");
+            if(n(members[0],"x")!=150)throw new AssertionError("move right failed");
+        }
         long end=System.currentTimeMillis()+90000;
         int lastSeq=-1;
         while(System.currentTimeMillis()<end) {
@@ -138,11 +168,10 @@ public class EmulatorClient {
             int uid=n(s,"uid"),seq=n(s,"seq");
             if(n(s,"turn")==uid && seq!=lastSeq) {
                 lastSeq=seq;
-                if(mode.equals("pvp") && !host) command("pass","&seq="+seq);
+                if(mode.equals("pvp") && !host) ((CommandListener)arena).commandAction((Command)field(arena,"pass"),(Displayable)arena);
                 else {
-                    Object arena=field(app,"arena");
                     set(arena,"angle",Integer.valueOf(45));
-                    set(arena,"power",Integer.valueOf(mode.equals("pvp")?72:(host?78:71)));
+                    set(arena,"power",Integer.valueOf(mode.equals("pvp")?69:(host?78:71)));
                     // Exercise both iOS-style touch and keypad handlers in the shipped Canvas.
                     if(!host && mode.equals("boss")) {
                         Method touch=arena.getClass().getDeclaredMethod("pointerReleased",int.class,int.class);
@@ -163,5 +192,9 @@ public class EmulatorClient {
         screenshot(output+"/"+role+"-finished.png");
         Files.write(new File(output,role+"-result.txt").toPath(),
             ("mode="+mode+" coins="+n(state(),"coins")+" result="+text(state(),"result")).getBytes("UTF-8"));
+        await(()->new File(output,(host?"guest":"host")+"-result.txt").exists(),"both saw result");
+        ((CommandListener)arena).commandAction((Command)field(arena,"leave"),(Displayable)arena);
+        await(()->n(state(),"room")==0,"leave returns to lobby");
+        await(()->canvasClass.getField("curScr").get(null)==menu && ((Boolean)field(menu,"lobby")),"lobby visible after leaving");
     }
 }

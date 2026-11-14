@@ -5,6 +5,8 @@ import coreLG.CCanvas;
 import java.io.*;
 import javax.microedition.lcdui.Display;
 import javax.microedition.lcdui.Displayable;
+import javax.microedition.lcdui.Alert;
+import javax.microedition.lcdui.AlertType;
 import javax.microedition.midlet.MIDletStateChangeException;
 import javax.microedition.rms.RecordStore;
 
@@ -66,7 +68,7 @@ public final class OnlineMidlet extends GameMidlet implements Runnable {
     public void saveServer(String value) {
         value = value.trim();
         while (value.endsWith("/")) value = value.substring(0, value.length()-1);
-        if (!(value.startsWith("https://") || value.startsWith("http://127.0.0.1:") || value.startsWith("http://localhost:"))) {
+        if (!validServer(value)) {
             CCanvas.startOKDlg("Dùng HTTPS cho máy chủ từ xa."); return;
         }
         synchronized (this) {
@@ -74,6 +76,29 @@ public final class OnlineMidlet extends GameMidlet implements Runnable {
             base = value; save();
         }
         home();
+    }
+    private static boolean validServer(String value) {
+        boolean secure=value.startsWith("https://");
+        if(!secure && !value.startsWith("http://")) return false;
+        int begin=secure?8:7, end=value.indexOf('/',begin);
+        if(end<0) end=value.length();
+        if(end==begin || value.indexOf('@')>=0 || value.indexOf('\\')>=0 || value.indexOf('?')>=0 || value.indexOf('#')>=0) return false;
+        for(int i=0;i<value.length();i++) if(value.charAt(i)<=32 || value.charAt(i)>126) return false;
+        String authority=value.substring(begin,end);
+        int colon=authority.indexOf(':');
+        String host=colon<0?authority:authority.substring(0,colon);
+        if(host.length()==0 || host.charAt(0)=='.' || host.charAt(host.length()-1)=='.') return false;
+        for(int i=0;i<host.length();i++) {
+            char c=host.charAt(i);
+            if(!((c>='a' && c<='z') || (c>='A' && c<='Z') || (c>='0' && c<='9') || c=='.' || c=='-')) return false;
+        }
+        if(colon>=0) {
+            String port=authority.substring(colon+1);int number=0;
+            if(port.length()==0 || port.length()>5) return false;
+            for(int i=0;i<port.length();i++){char c=port.charAt(i);if(c<'0'||c>'9')return false;number=number*10+c-'0';}
+            if(number<1 || number>65535)return false;
+        }
+        return secure || (colon>=0 && (host.equalsIgnoreCase("localhost") || host.equals("127.0.0.1")));
     }
     public void authenticate(String name, String password, boolean registering) {
         if (name.length() == 0 || password.length() == 0) { CCanvas.startOKDlg("Hãy nhập tài khoản và mật khẩu."); return; }
@@ -113,7 +138,7 @@ public final class OnlineMidlet extends GameMidlet implements Runnable {
     private void refresh(State s, boolean action) {
         if (action) CCanvas.endDlg();
         if (s.room != 0) {
-            if (display.getCurrent() != arena) display.setCurrent(arena);
+            if (display.getCurrent() != arena && !(display.getCurrent() instanceof Alert)) display.setCurrent(arena);
             arena.repaint();
         } else if (display.getCurrent() == arena || CCanvas.curScr == login || (CCanvas.curScr == menu && !menu.isLobby())) {
             showLobby();
@@ -157,8 +182,15 @@ public final class OnlineMidlet extends GameMidlet implements Runnable {
                     final boolean goHome = expired;
                     display.callSerially(new Runnable() { public void run() {
                         if (goHome) home();
-                        CCanvas.endDlg();
-                        CCanvas.startOKDlg(e.getMessage() == null ? "Không kết nối được máy chủ." : e.getMessage());
+                        String message=e.getMessage() == null ? "Không kết nối được máy chủ." : e.getMessage();
+                        if (display.getCurrent()==arena) {
+                            Alert notice=new Alert("Thông báo", message, null, AlertType.INFO);
+                            notice.setTimeout(Alert.FOREVER);
+                            display.setCurrent(notice, arena);
+                        } else {
+                            CCanvas.endDlg();
+                            CCanvas.startOKDlg(message);
+                        }
                     } });
                 }
                 arena.repaint();
