@@ -9,4 +9,4 @@ MIDlet-Permissions-Opt: javax.microedition.io.Connector.http,javax.mic
  roedition.io.Connector.https
 Army2-Server: http://127.0.0.1:8080
 MIDlet-Jar-URL: ARMY2_Online_IOS.jar
-MIDlet-Jar-Size: 29428629
+MIDlet-Jar-Size: 29434930

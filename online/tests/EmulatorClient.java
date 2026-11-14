@@ -69,10 +69,12 @@ public class EmulatorClient {
         send=app.getClass().getMethod("send",String.class,String.class);
         set(app,"base",url);
         set(app,"token","");
+        Object menu=field(app,"menu");
+        Class<?> canvasClass=app.getClass().getClassLoader().loadClass("coreLG.CCanvas");
+        await(()->canvasClass.getField("curScr").get(null)==menu,"original style main menu");
         screenshot(output+"/"+role+"-home.png");
         if(mode.equals("offline")) {
-            List menu=(List)field(app,"home");menu.setSelectedIndex(2,true);
-            ((CommandListener)app).commandAction(List.SELECT_COMMAND,menu);
+            app.getClass().getMethod("offline").invoke(app);
             await(()->((Boolean)app.getClass().getSuperclass().getField("isStartGame").get(null)).booleanValue(),"original offline entry");
             Thread.sleep(5000);
             Displayable current=Display.getDisplay((javax.microedition.midlet.MIDlet)app).getCurrent();
@@ -81,21 +83,40 @@ public class EmulatorClient {
             Files.write(new File(output,role+"-result.txt").toPath(),("mode=offline current="+current.getClass().getName()).getBytes("UTF-8"));
             return;
         }
-        // Register through the real login form and its CommandListener.
-        List home=(List)field(app,"home"); home.setSelectedIndex(0,true);
-        ((CommandListener)app).commandAction(List.SELECT_COMMAND,home);
-        ((TextField)field(app,"username")).setString(host?"EmuHost":"EmuGuest");
-        ((TextField)field(app,"password")).setString("emulator-test-password");
-        ((CommandListener)app).commandAction((Command)field(app,"register"),(Form)field(app,"login"));
+        // Tap the registration item on the original-style game menu.
+        int screenHeight=((Integer)canvasClass.getField("hieght").get(null)).intValue();
+        int menuTop=(screenHeight-(4*36+22))/2;
+        menu.getClass().getMethod("onPointerReleased",int.class,int.class,int.class)
+            .invoke(menu,240,menuTop+36+5,0);
+        await(()->field(app,"login")!=null && canvasClass.getField("curScr").get(null)==field(app,"login"),"tap registration menu");
+        Object login=field(app,"login");
+        Object username=field(login,"username"), password=field(login,"password");
+        // Tapping the input must open the game's native text box.
+        int inputX=n(username,"x"),inputY=n(username,"y");
+        login.getClass().getMethod("onPointerReleased",int.class,int.class,int.class).invoke(login,inputX+2,inputY+2,0);
+        Display currentDisplay=Display.getDisplay((javax.microedition.midlet.MIDlet)app);
+        await(()->currentDisplay.getCurrent() instanceof TextBox,"tap username input");
+        Method closeInput=username.getClass().getDeclaredMethod("closeNativeTextBox");
+        closeInput.setAccessible(true);closeInput.invoke(username);
+        username.getClass().getMethod("setText",String.class).invoke(username,host?"EmuHost":"EmuGuest");
+        password.getClass().getMethod("setText",String.class).invoke(password,"emulator-test-password");
+        screenshot(output+"/"+role+"-register.png");
+        login.getClass().getMethod("submit").invoke(login);
         await(()->state()!=null,"register and decode binary response");
+        await(()->canvasClass.getField("curScr").get(null)==menu && ((Boolean)field(menu,"lobby")),"game-style online lobby");
         if(host) {
-            command("create","&mode="+mode);
+            int lobbyTop=(screenHeight-(3*36+22))/2;
+            menu.getClass().getMethod("onPointerReleased",int.class,int.class,int.class)
+                .invoke(menu,240,lobbyTop+(mode.equals("boss")?36:0)+5,0);
             await(()->n(state(),"room")>0,"create room");
             Files.write(new File(output,"room.txt").toPath(),String.valueOf(n(state(),"room")).getBytes("UTF-8"));
         } else {
             await(()->new File(output,"room.txt").exists(),"host room file");
             String room=new String(Files.readAllBytes(new File(output,"room.txt").toPath()),"UTF-8");
-            command("join","&room="+room);
+            await(()->((Object[])field(state(),"rooms")).length>0,"room appears in lobby");
+            int lobbyTop=(screenHeight-(4*36+22))/2;
+            menu.getClass().getMethod("onPointerReleased",int.class,int.class,int.class)
+                .invoke(menu,240,lobbyTop+4*36+5,0);
             await(()->n(state(),"room")>0,"join room");
         }
         command("ready","");

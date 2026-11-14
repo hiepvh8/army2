@@ -15,6 +15,15 @@
 
 ## Chạy local
 
+Để mở cửa sổ giả lập Java ME và server local cùng lúc, mở terminal trong Desktop của môi trường rồi chạy:
+
+```bash
+cd /workspace/army2/online
+python3 tools/open_emulator.py
+```
+
+Giữ terminal mở trong khi thử. Lệnh tạo server khi cần và chỉ dừng server do chính lệnh này tạo khi đóng giả lập. Chạy `python3 tools/build_client.py` trước nếu vừa sửa mã client. Có thể kiểm tra các thành phần không cần màn hình bằng `python3 tools/open_emulator.py --check`. Đây là MicroEmulator Java ME trên Linux, không phải thiết bị iOS hay Manic EMU; cần kiểm tra thêm trên iPhone để xác nhận tương thích.
+
 Cần Python 3.10+ và Java runtime 17+ để build/test; bài kiểm thử HTTPS dùng thêm `openssl` và `keytool` (có trong JRE hiện tại). Backend chỉ dùng thư viện chuẩn Python, không cần Docker, pip, Redis hoặc PostgreSQL cho bản test một máy.
 
 Từ thư mục `online`:
@@ -39,8 +48,8 @@ Script chạy cả PvP và boss, điều khiển form đăng ký/nút bắn củ
 
 1. Triển khai backend HTTPS theo `docs/EC2.vi.md`.
 2. Nhập `ARMY2_Online_IOS.jar` vào Manic EMU, bật quyền mạng nếu ứng dụng yêu cầu.
-3. Trong launcher chọn **Địa chỉ server**, nhập `https://game.tenmiencuaban.com` (không thêm `/jme`). Lưu địa chỉ mới sẽ xóa phiên online cũ để tránh gửi token sang server khác.
-4. Chọn **Online**, nhập tên 3–16 ký tự ASCII, bắt đầu bằng chữ; mật khẩu 10–128 ký tự. Dùng **Đăng ký** cho lần đầu. Đây là tài khoản của backend mới, không phải tài khoản AnhVu Cloud.
+3. Trong menu game chọn **MÁY CHỦ**, nhập `https://game.tenmiencuaban.com` (không thêm `/jme`) rồi chọn **Lưu**. Lưu địa chỉ mới sẽ xóa phiên online cũ để tránh gửi token sang server khác.
+4. Chọn **ĐĂNG KÝ** hoặc **ĐĂNG NHẬP**, nhập tên 3–16 ký tự ASCII, bắt đầu bằng chữ; mật khẩu 10–128 ký tự. Chạm ô nhập để mở bàn phím. Đây là tài khoản của backend mới, không phải tài khoản AnhVu Cloud.
 5. Máy A tạo phòng PvP hoặc boss; máy B vào phòng. Tất cả chọn **Sẵn sàng**, chủ phòng chọn **Bắt đầu**.
 6. Chạm **Góc -/+**, **Lực -/+**, **BẮN**. Phím 4/6 chỉnh góc; 2/8 chỉnh lực; 5 bắn; 1/3 di chuyển. Góc 45 bắn sang phải, 135 sang trái.
 7. Sau trận chọn **Rời phòng** để tạo trận mới. Mục sự kiện trong lobby cho nhận thưởng khi đủ điều kiện.

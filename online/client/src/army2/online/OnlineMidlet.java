@@ -1,23 +1,21 @@
 package army2.online;
 
 import com.teamobi.mobiarmy2.GameMidlet;
+import coreLG.CCanvas;
 import java.io.*;
-import javax.microedition.lcdui.*;
+import javax.microedition.lcdui.Display;
+import javax.microedition.lcdui.Displayable;
 import javax.microedition.midlet.MIDletStateChangeException;
 import javax.microedition.rms.RecordStore;
 
-/** Additive entry point: original game classes are retained byte for byte. */
-public final class OnlineMidlet extends GameMidlet implements CommandListener, Runnable {
+/** Runs the original game canvas and adds online screens using its UI components. */
+public final class OnlineMidlet extends GameMidlet implements Runnable {
     private Display display;
-    private List home, lobby;
-    private Form login, settings;
-    private TextField username, password, endpoint;
-    private final Command ok = new Command("OK", Command.OK, 1);
-    private final Command register = new Command("Dang ky", Command.SCREEN, 2);
-    private final Command back = new Command("Quay lai", Command.BACK, 9);
+    private GameMenu menu;
+    private GameLogin login;
+    private Arena arena;
     public volatile State state;
     public volatile String network = "";
-    private Arena arena;
     private volatile boolean online, stopped;
     private boolean initialized;
     private String base, token = "";
@@ -32,20 +30,58 @@ public final class OnlineMidlet extends GameMidlet implements CommandListener, R
             base = getAppProperty("Army2-Server");
             if (base == null) base = "http://127.0.0.1:8080";
             restore();
+            super.startApp();
             arena = new Arena(this);
-            home = new List("ARMY2 Online - test v1", List.IMPLICIT);
-            home.append("Online: dang nhap / tiep tuc", null);
-            home.append("Dia chi server", null);
-            home.append("Game offline goc", null);
-            home.append("Thoat", null);
-            home.setCommandListener(this);
+            menu = new GameMenu(this);
+            // SplashScr uses the pre-existing menu instance instead of creating another.
+            boolean alreadyVisible = CCanvas.curScr == CCanvas.mainMenuScr && CCanvas.mainMenuScr != null;
+            CCanvas.mainMenuScr = menu;
+            if (alreadyVisible) menu.showHome();
             new Thread(this).start();
-            display.setCurrent(home);
-        } else if (online) display.setCurrent(state != null && state.room != 0 ? (Displayable) arena : (lobby == null ? (Displayable) home : (Displayable) lobby));
-        else if (GameMidlet.isStartGame) super.startApp();
-        else display.setCurrent(home);
+        } else if (online && state != null && state.room != 0) display.setCurrent(arena);
+        else display.setCurrent(GameMidlet.gameCanvas);
     }
-
+    public String serverAddress() { return base; }
+    public boolean hasSession() { return token.length() != 0; }
+    public void home() {
+        synchronized (this) { online = false; endpointRevision++; pendingOp = null; }
+        display.setCurrent(GameMidlet.gameCanvas);
+        CCanvas.mainMenuScr = menu;
+        menu.showHome();
+    }
+    public void offline() {
+        synchronized (this) { online = false; endpointRevision++; pendingOp = null; }
+        display.setCurrent(GameMidlet.gameCanvas);
+        CCanvas.mainMenuScr = new screen.MainMenuScr();
+        CCanvas.mainMenuScr.show();
+    }
+    public void openLogin(boolean registering) {
+        login = new GameLogin(this, registering ? GameLogin.REGISTER : GameLogin.LOGIN);
+        login.show();
+    }
+    public void openSettings() {
+        login = new GameLogin(this, GameLogin.SETTINGS);
+        login.show();
+    }
+    public void saveServer(String value) {
+        value = value.trim();
+        while (value.endsWith("/")) value = value.substring(0, value.length()-1);
+        if (!(value.startsWith("https://") || value.startsWith("http://127.0.0.1:") || value.startsWith("http://localhost:"))) {
+            CCanvas.startOKDlg("Dùng HTTPS cho máy chủ từ xa."); return;
+        }
+        synchronized (this) {
+            if (!base.equals(value)) { endpointRevision++; token = ""; state = null; pendingOp = null; online = false; }
+            base = value; save();
+        }
+        home();
+    }
+    public void authenticate(String name, String password, boolean registering) {
+        if (name.length() == 0 || password.length() == 0) { CCanvas.startOKDlg("Hãy nhập tài khoản và mật khẩu."); return; }
+        send(registering ? "register" : "login", "&name=" + Api.escape(name) + "&password=" + Api.escape(password));
+        CCanvas.startWaitDlg("Đang kết nối...");
+    }
+    public void connect() { online = true; send("poll", ""); CCanvas.startWaitDlg("Đang kết nối..."); }
+    public void exitGame() { stopped = true; GameMidlet.exit(); }
     private void restore() {
         RecordStore rms = null;
         try {
@@ -63,95 +99,25 @@ public final class OnlineMidlet extends GameMidlet implements CommandListener, R
             byte[] data = bytes.toByteArray();
             if (rms.getNumRecords() == 0) rms.addRecord(data, 0, data.length);
             else rms.setRecord(1, data, 0, data.length);
-        } catch (Exception e) { network = "Khong luu duoc phien dang nhap."; }
+        } catch (Exception e) { network = "Không lưu được phiên đăng nhập."; }
         finally { if (rms != null) try { rms.closeRecordStore(); } catch (Exception ignored) {} }
     }
-    private void loginForm() {
-        login = new Form("Tai khoan online rieng");
-        login.append("Ten 3-16 ky tu. Mat khau >=10 ky tu. Khong dung tai khoan cloud cu.");
-        username = new TextField("Ten", "", 16, TextField.ANY);
-        password = new TextField("Mat khau", "", 128, TextField.PASSWORD);
-        login.append(username); login.append(password);
-        login.addCommand(ok); login.addCommand(register); login.addCommand(back); login.setCommandListener(this);
-        display.setCurrent(login);
-    }
-    public void commandAction(Command cmd, Displayable screen) {
-        if (screen == home) {
-            int i = home.getSelectedIndex();
-            if (i == 0) {
-                if (token.length() == 0) loginForm();
-                else { online = true; send("poll", ""); }
-            } else if (i == 1) {
-                settings = new Form("Server online");
-                endpoint = new TextField("HTTPS URL (khong /jme)", base, 220, TextField.URL);
-                settings.append(endpoint); settings.addCommand(ok); settings.addCommand(back);
-                settings.setCommandListener(this); display.setCurrent(settings);
-            } else if (i == 2) {
-                synchronized (this) { online = false; endpointRevision++; pendingOp = null; }
-                try { super.startApp(); } catch (Exception e) { error(e.toString(), home); }
-            } else { stopped = true; notifyDestroyed(); }
-        } else if (screen == settings) {
-            if (cmd == ok) {
-                String value = endpoint.getString().trim();
-                while (value.endsWith("/")) value = value.substring(0, value.length()-1);
-                // Plain HTTP is only for loopback development. Real accounts require HTTPS.
-                if (!(value.startsWith("https://") || value.startsWith("http://127.0.0.1:") || value.startsWith("http://localhost:"))) {
-                    error("Dung HTTPS cho server tu xa.", settings); return;
-                }
-                synchronized (this) {
-                    if (!base.equals(value)) {
-                        endpointRevision++; token = ""; state = null; pendingOp = null; online = false;
-                    }
-                    base = value; save();
-                }
-            }
-            display.setCurrent(home);
-        } else if (screen == login) {
-            if (cmd == back) { display.setCurrent(home); return; }
-            String args = "&name=" + Api.escape(username.getString()) + "&password=" + Api.escape(password.getString());
-            password.setString("");
-            send(cmd == register ? "register" : "login", args);
-        } else if (screen == lobby) {
-            if (cmd == back) { synchronized (this) { online = false; endpointRevision++; pendingOp = null; } display.setCurrent(home); return; }
-            int index = lobby.getSelectedIndex();
-            if (index == 0) send("create", "&mode=pvp");
-            else if (index == 1) send("create", "&mode=boss");
-            else if (index == 2) send("claim", "");
-            else if (index == 3) send("logout", "");
-            else if (state != null && index-4 < state.rooms.length)
-                send("join", "&room=" + state.rooms[index-4].id);
-        }
-    }
-
     public synchronized void send(String op, String args) {
         if (pendingOp != null) return;
         pendingOp = op; pendingArgs = args; notifyAll();
     }
-    private void refresh(State s) {
-        if (s.room != 0) {
-            if (display.getCurrent() != arena && !(display.getCurrent() instanceof Alert)) display.setCurrent(arena);
-            arena.repaint();
-        } else {
-            Displayable current = display.getCurrent();
-            if (current == home || current == login || current == arena || current == lobby || current == null) {
-                int selected = lobby != null ? lobby.getSelectedIndex() : 0;
-                lobby = new List(s.name + " | " + s.coins + " xu", List.IMPLICIT);
-                lobby.append("Tao phong PvP 1v1", null);
-                lobby.append("Tao phong boss 2-4 nguoi", null);
-                lobby.append("Su kien: " + s.progress + "/" + s.goal + (s.claimed ? " da nhan" : " - nhan 200 xu"), null);
-                lobby.append("Dang xuat tai khoan", null);
-                for (int i=0; i<s.rooms.length; i++) {
-                    State.Room r=s.rooms[i];
-                    lobby.append("#" + r.id + " " + r.mode + " " + r.name + " " + r.count + "/" + r.capacity, null);
-                }
-                if (selected >= 0 && selected < lobby.size()) lobby.setSelectedIndex(selected, true);
-                lobby.addCommand(back); lobby.setCommandListener(this); display.setCurrent(lobby);
-            }
-        }
+    public void showLobby() {
+        display.setCurrent(GameMidlet.gameCanvas);
+        menu.showLobby();
     }
-    private void error(String message, Displayable next) {
-        Alert alert = new Alert("Thong bao", message, null, AlertType.INFO);
-        alert.setTimeout(Alert.FOREVER); display.setCurrent(alert, next == null ? home : next);
+    private void refresh(State s, boolean action) {
+        if (action) CCanvas.endDlg();
+        if (s.room != 0) {
+            if (display.getCurrent() != arena) display.setCurrent(arena);
+            arena.repaint();
+        } else if (display.getCurrent() == arena || CCanvas.curScr == login || (CCanvas.curScr == menu && !menu.isLobby())) {
+            showLobby();
+        }
     }
     public void run() {
         while (!stopped) {
@@ -173,22 +139,27 @@ public final class OnlineMidlet extends GameMidlet implements CommandListener, R
                     if (revision != endpointRevision) continue;
                     if (op.equals("logout")) {
                         token = ""; state = null; online = false; save();
-                        display.callSerially(new Runnable() { public void run() { display.setCurrent(home); } });
+                        display.callSerially(new Runnable() { public void run() { home(); } });
                         continue;
                     }
                     if (s.token.length() > 0) { token = s.token; save(); }
                     state = s; online = true; network = "";
                 }
                 final int currentRevision = revision;
-                display.callSerially(new Runnable() { public void run() { if (currentRevision == endpointRevision) refresh(s); } });
+                final boolean action = !op.equals("poll");
+                display.callSerially(new Runnable() { public void run() { if (currentRevision == endpointRevision) refresh(s, action); } });
             } catch (final Exception e) {
                 synchronized (this) { if (revision != endpointRevision) continue; }
                 network = e.getMessage() == null ? e.toString() : e.getMessage();
-                if (!op.equals("poll") || network.indexOf("dang nhap") >= 0 || network.indexOf("Phien") >= 0) {
-                    boolean expired = network.indexOf("dang nhap") >= 0 || network.indexOf("Phien") >= 0;
-                    final Displayable next = expired ? (Displayable) home : display.getCurrent();
-                    if (expired) { online = false; token = ""; state = null; save(); }
-                    display.callSerially(new Runnable() { public void run() { error(e.getMessage(), next); } });
+                boolean expired = network.indexOf("dang nhap") >= 0 || network.indexOf("Phien") >= 0;
+                if (expired) { online = false; token = ""; state = null; save(); }
+                if (!op.equals("poll") || expired) {
+                    final boolean goHome = expired;
+                    display.callSerially(new Runnable() { public void run() {
+                        if (goHome) home();
+                        CCanvas.endDlg();
+                        CCanvas.startOKDlg(e.getMessage() == null ? "Không kết nối được máy chủ." : e.getMessage());
+                    } });
                 }
                 arena.repaint();
             }
@@ -199,8 +170,5 @@ public final class OnlineMidlet extends GameMidlet implements CommandListener, R
         stopped = true;
         if (GameMidlet.isStartGame) super.destroyApp(unconditional);
     }
-    protected void pauseApp() {
-        // Manic EMU may suspend networking in background; poll resumes to recover server state.
-        if (GameMidlet.isStartGame) super.pauseApp();
-    }
+    protected void pauseApp() { if (GameMidlet.isStartGame) super.pauseApp(); }
 }
