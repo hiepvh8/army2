@@ -94,14 +94,14 @@ public final class ScreenAudit extends EmulatorClient {
         enter("password","audit-test-password");snap("07-register-filled");
         commandButton(screen,"center");
         await(()->state()!=null && current()==menu && ((Boolean)field(menu,"lobby")),"register to lobby");snap("08-lobby");
-        clickMenu(2,4);expectError("Chua du dieu kien","09-event-not-ready");
-        clickMenu(3,4);await(()->current()==menu && !((Boolean)field(menu,"lobby")) && !((Boolean)app.getClass().getMethod("hasSession").invoke(app)),"logout returns home");
+        clickMenu(2,5);expectError("Chua du dieu kien","09-event-not-ready");
+        clickMenu(3,5);await(()->current()==menu && !((Boolean)field(menu,"lobby")) && !((Boolean)app.getClass().getMethod("hasSession").invoke(app)),"logout returns home");
 
         clickMenu(0,5);screen=field(app,"login");enter("username","AuditUser");enter("password","wrong-password");
         commandButton(screen,"center");expectError("Sai tai khoan","10-wrong-password");
         enter("password","audit-test-password");commandButton(screen,"center");
         await(()->current()==menu && ((Boolean)field(menu,"lobby")),"login success");snap("11-login-success");
-        clickMenu(3,4);await(()->current()==menu && !((Boolean)field(menu,"lobby")) && !((Boolean)app.getClass().getMethod("hasSession").invoke(app)),"second logout");
+        clickMenu(3,5);await(()->current()==menu && !((Boolean)field(menu,"lobby")) && !((Boolean)app.getClass().getMethod("hasSession").invoke(app)),"second logout");
         clickMenu(1,5);screen=field(app,"login");enter("username","AuditUser");enter("password","audit-test-password");
         commandButton(screen,"center");expectError("Ten da duoc su dung","12-duplicate-account");
         commandButton(screen,"left");await(()->current()==menu,"back from duplicate registration");

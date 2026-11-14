@@ -2,10 +2,13 @@
 
 Đây là **bản thử nghiệm online v0.1**, bổ sung lên `IOS_TuTien.jar` theo cách 1. Giữ nguyên 1.192 class gốc và tài nguyên; thêm launcher, màn hình đấu online và giao thức riêng. Không phải bản chuyển toàn bộ các vũ khí, map, tu tiên và sự kiện offline lên server.
 
+**Chưa hoàn thành mục tiêu multiplayer giữ gameplay gốc.** Phòng PvP/boss hiện chạy đấu trường thử nghiệm riêng. Nhân vật gốc có thể được lưu và khôi phục theo tài khoản, nhưng chưa thể bắn nhau hoặc đánh boss cùng nhau trong engine gốc. Xem [trạng thái, cách dùng và các phần còn thiếu](docs/GAME_GOC_ONLINE.vi.md).
+
 ## Có gì trong bản này
 
 - JAR CLDC 1.1/MIDP 2.0, bytecode Java 1.4, có bước preverification.
 - Tài khoản online riêng; mật khẩu băm PBKDF2, phiên đăng nhập lưu RMS.
+- Nhân vật gốc có thể lưu/tải thủ công theo tài khoản; server kiểm tra phiên bản và thiết bị dự phòng trước khi thay nhân vật.
 - Lobby, tạo/vào phòng, sẵn sàng, chủ phòng bắt đầu.
 - PvP 1v1; boss phối hợp 2–4 người. Server quản lý lượt, vị trí, HP, đường đạn, sát thương, AI, kết quả và thưởng.
 - Mỗi lượt 30 giây, di chuyển tối đa một lần; lệnh cũ/sai lượt bị từ chối.
@@ -40,6 +43,7 @@ Kiểm thử hai MIDlet thật bằng MicroEmulator 2.0.4 (JAR dependency đư�
 
 ```bash
 python3 tools/test_emulator.py
+python3 tools/test_profiles_emulator.py
 ```
 
 Script chạy cả PvP và boss, điều khiển form đăng ký/nút bắn của JAR, chạy PvP qua HTTP loopback và boss qua HTTPS với CA thử nghiệm được tin cậy tạm thời, đọc kết quả và lưu ảnh trong `test-results/`. Emulator dùng để kiểm thử là MicroEmulator; **không thay thế việc kiểm thử Manic EMU trên iOS**.
@@ -70,7 +74,8 @@ python3 tools/package_release.py
 ## Kiến trúc và giới hạn
 
 - `server/game.py`: luật online v1, phòng/trận và phần thưởng. Dữ liệu tài khoản/phiên/thưởng lưu SQLite WAL. Trạng thái trận trong RAM. Mỗi lệnh được xử lý dưới khóa toàn ứng dụng, phù hợp thử nghiệm ít người trên một process.
-- `server/main.py`: HTTP POST, JSON `/api` để test và binary `/jme` cho JAR; `/health`. Endpoint JSON chỉ được phục vụ loopback trong cấu hình nginx mặc định.
+- `server/main.py`: HTTP POST, JSON `/api` để test và binary `/jme` cho JAR; `/profile/load`, `/profile/save` bảo vệ bằng phiên; `/health`. Endpoint JSON chỉ được phục vụ loopback trong cấu hình nginx mặc định.
+- `server/profiles.py`: xác thực container AVP1, lưu dữ liệu gốc theo tài khoản với số phiên bản. Đây là dữ liệu do máy chơi cung cấp, chưa phải nhân vật/chỉ số đáng tin để tính kết quả online.
 - `client/src/army2/online`: Java ME bổ sung. Poll trạng thái khoảng 0,9 giây/lần; mọi lệnh chiến đấu mang sequence. Không tự retry lệnh bắn sau lỗi mạng: poll sẽ xác nhận trạng thái server.
 - Tất cả người chơi online bắt đầu cùng HP/vũ khí để kiểm thử công bằng; không nhận tiền/chỉ số/trang bị từ save cũ. Xu online hiện là tiến trình thử nghiệm, chưa có shop hoặc giao dịch.
 - Vật lý online v1 hiện là một đạn parabol, bản đồ sàn phẳng, không gió/phá địa hình. Không phải bản port chính xác `OfflineBulletSim`. Boss là một AI đơn giản, dùng sprite gốc; chưa port toàn bộ boss/kỹ năng cũ.

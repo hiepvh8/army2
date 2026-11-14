@@ -106,7 +106,7 @@ public class EmulatorClient {
         await(()->canvasClass.getField("curScr").get(null)==menu && ((Boolean)field(menu,"lobby")),"game-style online lobby");
         screenshot(output+"/"+role+"-lobby.png");
         if(host) {
-            int lobbyTop=(screenHeight-(3*36+22))/2;
+            int lobbyTop=(screenHeight-(4*36+22))/2;
             menu.getClass().getMethod("onPointerReleased",int.class,int.class,int.class)
                 .invoke(menu,240,lobbyTop+(mode.equals("boss")?36:0)+5,0);
             await(()->n(state(),"room")>0,"create room");
@@ -124,9 +124,9 @@ public class EmulatorClient {
             await(()->new File(output,"room.txt").exists(),"host room file");
             String room=new String(Files.readAllBytes(new File(output,"room.txt").toPath()),"UTF-8");
             await(()->((Object[])field(state(),"rooms")).length>0,"room appears in lobby");
-            int lobbyTop=(screenHeight-(4*36+22))/2;
+            int lobbyTop=(screenHeight-(5*36+22))/2;
             menu.getClass().getMethod("onPointerReleased",int.class,int.class,int.class)
-                .invoke(menu,240,lobbyTop+4*36+5,0);
+                .invoke(menu,240,lobbyTop+5*36+5,0);
             await(()->n(state(),"room")>0,"join room");
         }
         Object arena=field(app,"arena");

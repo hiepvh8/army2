@@ -43,6 +43,8 @@ sudo bash deploy/bootstrap.sh game.example.com admin@example.com
 
 Email dùng cho Let's Encrypt. Script cài Python/nginx/certbot từ APT, user dịch vụ riêng, systemd, nginx, chứng chỉ và backup mỗi ngày. Dữ liệu giữ ở `/var/lib/army2-online/army2.sqlite3`; nâng cấp không ghi đè database. Thư mục `/var/www/army2-client` chỉ chứa JAR/JAD được build.
 
+Tài khoản và bản lưu nhân vật gốc của chức năng đồng bộ thủ công cũng nằm trong SQLite này. Endpoint `/profile/save` được giới hạn 3 MiB và yêu cầu phiên; reverse proxy chỉ cho HTTPS đối với kết nối từ ngoài. Khi nâng cấp từ cấu hình do script cũ tạo, script thêm route vào site hiện có và giữ cấu hình chứng chỉ; sao lưu DB trước nâng cấp. Các bản lưu do client tạo chưa được server xác thực tính hợp lệ của chỉ số và không biến trận thử nghiệm thành gameplay gốc.
+
 ## 3. Kiểm tra trước khi chơi
 
 Trên EC2:

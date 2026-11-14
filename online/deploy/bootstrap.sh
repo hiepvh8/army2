@@ -36,6 +36,26 @@ install -m 0644 "$SCRIPT_DIR/army2-backup.timer" /etc/systemd/system/army2-backu
 cat >/etc/nginx/conf.d/army2-rate.conf <<'EOF'
 limit_req_zone $binary_remote_addr zone=army2:10m rate=8r/s;
 EOF
+install -d -m 0755 /etc/nginx/snippets
+cat >/etc/nginx/snippets/army2-profile.conf <<'EOF'
+location = /profile/load {
+    limit_req zone=army2 burst=20 nodelay;
+    limit_except POST { deny all; }
+    proxy_pass http://127.0.0.1:8080;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_connect_timeout 5s;
+    proxy_read_timeout 15s;
+}
+location = /profile/save {
+    client_max_body_size 3m;
+    limit_req zone=army2 burst=20 nodelay;
+    limit_except POST { deny all; }
+    proxy_pass http://127.0.0.1:8080;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_connect_timeout 5s;
+    proxy_read_timeout 15s;
+}
+EOF
 # Preserve existing certificate configuration on repeat deployments.
 if [[ ! -f /etc/nginx/sites-available/army2-online ]]; then
 cat >/etc/nginx/sites-available/army2-online <<EOF
@@ -43,6 +63,7 @@ server {
     listen 80;
     server_name $DOMAIN;
     client_max_body_size 4k;
+    include /etc/nginx/snippets/army2-profile.conf;
     location = /health {
         proxy_pass http://127.0.0.1:8080;
         proxy_set_header X-Forwarded-Proto \$scheme;
@@ -70,6 +91,20 @@ else
     exit 1
   fi
 fi
+# Add the two routes to an existing managed site without replacing certbot's
+# HTTPS configuration. Fail closed if its layout no longer matches our site.
+python3 - /etc/nginx/sites-available/army2-online <<'PY'
+from pathlib import Path
+import sys
+site = Path(sys.argv[1])
+text = site.read_text()
+include = 'include /etc/nginx/snippets/army2-profile.conf;'
+if include not in text:
+    anchor = 'location = /jme {'
+    if text.count(anchor) != 1:
+        raise SystemExit('Cannot safely update existing nginx site; inspect it manually.')
+    site.write_text(text.replace(anchor, include + '\n    ' + anchor, 1))
+PY
 ln -sfn /etc/nginx/sites-available/army2-online /etc/nginx/sites-enabled/army2-online
 nginx -t
 systemctl daemon-reload

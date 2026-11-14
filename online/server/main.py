@@ -12,6 +12,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs
 
 from .game import Game, GameError, require
+from .profiles import MAX_PROFILE_BYTES, MAX_REVISION, ProfileConflict, Profiles
 from .wire import encode
 
 LOG = logging.getLogger('army2')
@@ -20,8 +21,10 @@ LOG = logging.getLogger('army2')
 class Application:
     def __init__(self, db):
         self.game = Game(db)
+        self.profiles = Profiles(self.game)
         self.lock = threading.RLock()
         self.buckets = {}
+        self.profile_slots = threading.BoundedSemaphore(4)
 
     def rate_limit(self, identity, limit):
         now = time.monotonic()
@@ -69,12 +72,14 @@ def make_server(host, port, app, require_tls=False):
             # Do not log request bodies, URLs, passwords or authorization headers.
             pass
 
-        def reply(self, status, body, kind):
+        def reply(self, status, body, kind, headers=None):
             self.send_response(status)
             self.send_header('Content-Type', kind)
             self.send_header('Content-Length', str(len(body)))
             self.send_header('Cache-Control', 'no-store')
             self.send_header('X-Content-Type-Options', 'nosniff')
+            for name, value in (headers or {}).items():
+                self.send_header(name, str(value))
             self.end_headers()
             self.wfile.write(body)
 
@@ -85,6 +90,9 @@ def make_server(host, port, app, require_tls=False):
                 self.reply(404, b'Not found', 'text/plain')
 
         def do_POST(self):
+            if self.path in ('/profile/load', '/profile/save'):
+                self.profile()
+                return
             binary = self.path == '/jme'
             if self.path not in ('/jme', '/api'):
                 self.reply(404, b'Not found', 'text/plain')
@@ -116,6 +124,52 @@ def make_server(host, port, app, require_tls=False):
                 LOG.exception('Request failed')
                 body = encode(error='Loi server. Vui long thu lai.') if binary else b'{"error":"server_error"}'
                 self.reply(500, body, 'application/octet-stream' if binary else 'application/json')
+
+        def profile(self):
+            held = False
+            try:
+                require(not require_tls or (self.client_address[0] in ('127.0.0.1', '::1') and
+                        self.headers.get('X-Forwarded-Proto') == 'https'), 'HTTPS bat buoc.')
+                auth = self.headers.get('Authorization', '')
+                token = auth[7:] if auth.startswith('Bearer ') else ''
+                # Authenticate and limit requests before reading a potentially large body.
+                with app.lock:
+                    app.rate_limit(('request', self.client_address[0]), 1200)
+                    uid = app.game.identify(token)
+                    app.rate_limit(('profile', uid), 30)
+                held = app.profile_slots.acquire(blocking=False)
+                require(held, 'May chu dang ban. Thu lai sau.')
+                length = int(self.headers.get('Content-Length', '-1'))
+                if self.path == '/profile/load':
+                    require(length == 0, 'Yeu cau khong hop le.')
+                    with app.lock:
+                        require(app.game.identify(token) == uid, 'Phien het han.')
+                        revision, data = app.profiles.load(uid)
+                    if data is None:
+                        self.reply(404, b'Chua co ban luu.', 'text/plain')
+                    else:
+                        self.reply(200, data, 'application/octet-stream', {'X-Profile-Revision': revision})
+                else:
+                    require(31 <= length <= MAX_PROFILE_BYTES, 'Ban luu rong hoac qua lon.')
+                    expected = int(self.headers.get('X-Profile-Revision', '-1'))
+                    require(0 <= expected <= MAX_REVISION, 'Phien ban khong hop le.')
+                    raw = self.rfile.read(length)
+                    require(len(raw) == length, 'Ban luu khong day du.')
+                    with app.lock:
+                        require(app.game.identify(token) == uid, 'Phien het han.')
+                        revision = app.profiles.save(uid, expected, raw)
+                    self.reply(200, b'', 'application/octet-stream', {'X-Profile-Revision': revision})
+            except ProfileConflict as exc:
+                self.reply(409, str(exc).encode('utf-8'), 'text/plain; charset=utf-8')
+            except (GameError, ValueError, TypeError, UnicodeError) as exc:
+                message = str(exc) if isinstance(exc, GameError) else 'Yeu cau khong hop le.'
+                self.reply(400, message.encode('utf-8'), 'text/plain; charset=utf-8')
+            except Exception:
+                LOG.exception('Profile request failed')
+                self.reply(500, b'Loi server.', 'text/plain')
+            finally:
+                if held:
+                    app.profile_slots.release()
 
     class Server(ThreadingHTTPServer):
         daemon_threads = True

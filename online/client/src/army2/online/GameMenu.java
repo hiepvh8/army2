@@ -23,15 +23,16 @@ public final class GameMenu extends MainMenuScr {
     public boolean isLobby() { return lobby; }
     public void showHome() { lobby = false; selected = 0; super.show(); }
     public void showLobby() { lobby = true; selected = 0; super.show(); }
-    private int count() { State s=app.state; return lobby ? 4 + (s == null ? 0 : s.rooms.length) : HOME.length; }
+    private int count() { State s=app.state; return lobby ? 5 + (s == null ? 0 : s.rooms.length) : HOME.length; }
     private String label(int n) {
         if (!lobby) return HOME[n];
         State s = app.state;
-        if (n==0) return "TẠO PHÒNG PvP";
-        if (n==1) return "CÙNG ĐÁNH BOSS";
+        if (n==0) return "PVP THỬ NGHIỆM";
+        if (n==1) return "BOSS THỬ NGHIỆM";
         if (n==2) return s==null ? "SỰ KIỆN" : "SỰ KIỆN " + s.progress + "/" + s.goal + (s.claimed ? " (ĐÃ NHẬN)" : "");
         if (n==3) return "ĐĂNG XUẤT";
-        State.Room r = s.rooms[n-4];
+        if (n==4) return "NHÂN VẬT GỐC";
+        State.Room r = s.rooms[n-5];
         return "#" + r.id + " " + r.name + " " + r.count + "/" + r.capacity;
     }
     private void choose() {
@@ -47,7 +48,8 @@ public final class GameMenu extends MainMenuScr {
             else if(selected==1) app.send("create","&mode=boss");
             else if(selected==2) app.send("claim","");
             else if(selected==3) app.send("logout","");
-            else if(s!=null && selected-4<s.rooms.length) app.send("join","&room="+s.rooms[selected-4].id);
+            else if(selected==4) app.showOriginalProfile();
+            else if(s!=null && selected-5<s.rooms.length) app.send("join","&room="+s.rooms[selected-5].id);
         }
     }
     public void update() {
